@@ -93,9 +93,9 @@ describe("buildTimeline", () => {
   test("synthesizes an approval for records approved by hand in Airtable", () => {
     const record = makeRecord({
       "Code URL": "https://github.com/a/b",
-      "Automation - Submit to Unified YSWS": true,
+      Status: "Approved",
       "Optional - Override Hours Spent": 9,
-      "Optional - Override Hours Spent Justification": "manual",
+      Justification: "manual",
     });
     const group = buildGroups([record])[0]!;
     const events = buildTimeline(group, actor, []);
@@ -108,7 +108,7 @@ describe("buildTimeline", () => {
   });
 
   test("synthesizes a rejection for records rejected by hand", () => {
-    const record = makeRecord({ "Code URL": "https://github.com/a/b", Rejected: true });
+    const record = makeRecord({ "Code URL": "https://github.com/a/b", Status: "Rejected" });
     const group = buildGroups([record])[0]!;
     const events = buildTimeline(group, actor, []);
     expect(events.map((e) => e.type)).toEqual(["ship", "rejection"]);
@@ -118,7 +118,7 @@ describe("buildTimeline", () => {
   test("does not synthesize when a stored decision event exists", () => {
     const record = makeRecord({
       "Code URL": "https://github.com/a/b",
-      "Automation - Submit to Unified YSWS": true,
+      Status: "Approved",
     });
     const group = buildGroups([record])[0]!;
     const stored = encodePayload({

@@ -162,7 +162,7 @@ export function buildTimeline(
       hoursAssigned: fieldNumber(group.primary, F.overrideHours) ?? claimedHours(group),
       feedbackMessage: NO_FEEDBACK,
       justification:
-        fieldString(group.primary, F.overrideJustification) || "(approved directly in Airtable)",
+        fieldString(group.primary, F.justification) || "(approved directly in Airtable)",
       timestamp: shippedAt,
     });
   } else if (status === "rejected" && !hasRejection) {

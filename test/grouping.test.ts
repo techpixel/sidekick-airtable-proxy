@@ -20,22 +20,20 @@ describe("deriveStatus", () => {
     return { key: record.id, primary: record, members: [record] };
   };
 
-  test("pending when no checkbox is set", () => {
+  test("pending when Status is unset", () => {
     expect(deriveStatus(group({}))).toBe("pending");
   });
 
-  test("approved when submitted to unified", () => {
-    expect(deriveStatus(group({ "Automation - Submit to Unified YSWS": true }))).toBe("approved");
+  test("approved when Status is Approved", () => {
+    expect(deriveStatus(group({ Status: "Approved" }))).toBe("approved");
   });
 
-  test("rejected when rejected and not approved", () => {
-    expect(deriveStatus(group({ Rejected: true }))).toBe("rejected");
+  test("rejected when Status is Rejected", () => {
+    expect(deriveStatus(group({ Status: "Rejected" }))).toBe("rejected");
   });
 
-  test("approved wins when both checkboxes are ticked", () => {
-    expect(
-      deriveStatus(group({ "Automation - Submit to Unified YSWS": true, Rejected: true })),
-    ).toBe("approved");
+  test("pending when Status is Pending", () => {
+    expect(deriveStatus(group({ Status: "Pending" }))).toBe("pending");
   });
 });
 

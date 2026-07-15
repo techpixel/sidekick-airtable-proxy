@@ -2,7 +2,6 @@ import { badRequest } from "./errors";
 import {
   F,
   fieldAttachmentUrl,
-  fieldBool,
   fieldNumber,
   fieldString,
   type Project,
@@ -22,11 +21,13 @@ export function buildGroups(records: SubmissionRecord[]): ProjectGroup[] {
 }
 
 /**
- * Ship status: submitted-to-unified -> approved, else rejected -> rejected, else pending.
+ * Ship status from the Status single-select: Approved -> approved,
+ * Rejected -> rejected, else pending.
  */
 export function deriveStatus(group: ProjectGroup): ShipStatus {
-  if (fieldBool(group.primary, F.submitToUnified)) return "approved";
-  if (fieldBool(group.primary, F.rejected)) return "rejected";
+  const status = fieldString(group.primary, F.status);
+  if (status === "Approved") return "approved";
+  if (status === "Rejected") return "rejected";
   return "pending";
 }
 

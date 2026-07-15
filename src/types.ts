@@ -167,8 +167,7 @@ export const F = {
   originalHours: "Original Hours",
   hackatimeProjectName: "Hackatime Project Name",
   overrideHours: "Optional - Override Hours Spent",
-  overrideJustification: "Optional - Override Hours Spent Justification",
-  submitToUnified: "Automation - Submit to Unified YSWS",
+  justification: "Justification",
   firstSubmittedAt: "Automation - First Submitted At",
-  rejected: "Rejected",
+  status: "Status",
 } as const;

@@ -9,12 +9,12 @@ The proxy adds **zero fields** to the base. Everything is derived from or writte
 | Sidekick concept | Airtable |
 | --- | --- |
 | Project / ship (always 1:1) | One record in `YSWS Project Submission` (one record = one project; never merged) |
-| Ship status | `Automation - Submit to Unified YSWS` ✓ → `approved`; else `Rejected` ✓ → `rejected`; else `pending` |
+| Ship status | `Status` single-select: `Approved` → `approved`; `Rejected` → `rejected`; else `pending` |
 | Claimed hours (`hoursSubmitted`) | `Original Hours` |
 | Assigned hours on approve | `Optional - Override Hours Spent` |
-| Reviewer justification | `Optional - Override Hours Spent Justification` |
-| Approve | Ticks `Automation - Submit to Unified YSWS` (fires the Unified YSWS automation), clears `Rejected` |
-| Reject | Ticks `Rejected` |
+| Reviewer justification | `Justification` |
+| Approve | Sets `Status` = `Approved` |
+| Reject | Sets `Status` = `Rejected` |
 | Review events (approvals, rejections, comments) | Record comments on the record, `[sidekick:v1] {json}` |
 | Author identity | `Email` → `Users` table (`Slack ID` / `Hack Club ID`) → Slack API fallback |
 | Hackatime id | Hackatime `lookup_slack_uid` / `lookup_email` (needs `STATS_API_KEY`) |
@@ -26,13 +26,13 @@ Every submission record is presented as its own project, even when records share
 
 ### Manual edits in Airtable
 
-Status is re-derived from the checkboxes on every read, so ticking `Automation - Submit to Unified YSWS` or `Rejected` by hand works — the timeline synthesizes a matching approval/rejection event (attributed to `ident!airtable`) when no Sidekick-created event exists.
+Status is re-derived from the `Status` single-select on every read, so setting it to `Approved` or `Rejected` by hand works — the timeline synthesizes a matching approval/rejection event (attributed to `ident!airtable`) when no Sidekick-created event exists.
 
 ## Protocol deviations (by design)
 
 - **No public feedback.** `feedbackMessage` is never persisted; events echo the constant `"(none)"`. Only the internal justification is kept. `UPDATE_REVIEW_ACTION.feedbackMessage` is accepted and discarded.
 - **Single-stage review.** `pending_hq` never occurs; `authorize`/`deauthorize` and `hoursAssigned` edits via `UPDATE_REVIEW_ACTION` return 400. `supportsRewardedOverride` is not advertised and `rewardedHoursOverride` is rejected.
-- **Re-approving an approved ship is a 400** — the Unified YSWS automation already fired and can't be re-run safely. Rejecting an approved ship is also a 400. Approving a rejected ship is allowed (clears `Rejected`).
+- **Re-approving an approved ship is a 400.** Rejecting an approved ship is also a 400. Approving a rejected ship is allowed (flips `Status` to `Approved`).
 - **No shop.** `FETCH_SHOP_ITEMS`/`FETCH_ORDERS` return empty; order/item lookups 404. User notes return `INVALID_ACTION` (Sidekick hides the UI).
 - **Unresolvable authors** get a placeholder `ident!unresolved_<recordId>` id; Sidekick renders them as unknown users.
 - **Screenshot URLs expire** (~2 h, an Airtable attachment property). The 60 s record cache keeps served URLs fresh, but don't persist them.

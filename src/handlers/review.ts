@@ -54,19 +54,18 @@ export async function submitReviewAction(input: Record<string, unknown>): Promis
       if (hoursAssigned < 0) throw badRequest("hoursAssigned must be >= 0");
       const justification = reqString(input, "justification");
       if (status === "approved") {
-        throw badRequest("Ship is already approved; the Unified YSWS automation has run.");
+        throw badRequest("Ship is already approved.");
       }
 
-      // Every merged record flows into Unified YSWS independently, so each row
-      // carries the reviewer-verified hours and justification.
+      // Approval is recorded on the Status single-select; each row also carries
+      // the reviewer-verified hours and justification.
       await patchRecords(
         group.members.map((record) => ({
           id: record.id,
           fields: {
-            [F.submitToUnified]: true,
-            [F.rejected]: false,
+            [F.status]: "Approved",
             [F.overrideHours]: hoursAssigned,
-            [F.overrideJustification]: justification,
+            [F.justification]: justification,
           },
         })),
       );
@@ -87,13 +86,11 @@ export async function submitReviewAction(input: Record<string, unknown>): Promis
     case "reject": {
       if (status !== "pending") {
         throw badRequest(
-          status === "approved"
-            ? "Ship is already approved; rejecting cannot undo the Unified YSWS automation."
-            : "Ship is already rejected.",
+          status === "approved" ? "Ship is already approved." : "Ship is already rejected.",
         );
       }
       await patchRecords(
-        group.members.map((record) => ({ id: record.id, fields: { [F.rejected]: true } })),
+        group.members.map((record) => ({ id: record.id, fields: { [F.status]: "Rejected" } })),
       );
       const payload: RejectionPayload = {
         kind: "rejection",
@@ -205,7 +202,7 @@ export async function updateReviewAction(input: Record<string, unknown>): Promis
     await patchRecords(
       group.members.map((record) => ({
         id: record.id,
-        fields: { [F.overrideJustification]: justification },
+        fields: { [F.justification]: justification },
       })),
     );
     submissionsCache.invalidate();
