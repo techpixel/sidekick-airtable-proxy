@@ -1,0 +1,16 @@
+{
+  "name": "sidekick-airtable-proxy",
+  "version": "1.0.0",
+  "description": "Sidekick master endpoint backed by the YSWS - Horizons Nexus Airtable base",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch run src/index.ts",
+    "test": "bun test",
+    "smoke": "bun run scripts/smoke.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.0"
+  }
+}
