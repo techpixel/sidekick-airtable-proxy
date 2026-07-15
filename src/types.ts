@@ -77,7 +77,7 @@ export interface SubmissionRecord {
   fields: Record<string, unknown>;
 }
 
-/** A merge group: records sharing a normalized Code URL. `primary` is the earliest. */
+/** One submission record presented as a project. `members` is always `[primary]`. */
 export interface ProjectGroup {
   key: string;
   primary: SubmissionRecord;

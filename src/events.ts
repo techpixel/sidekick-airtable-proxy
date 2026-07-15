@@ -6,7 +6,7 @@ import {
   type RecordComment,
   type TimelineEvent,
 } from "./types";
-import { averageHours, deriveStatus, submittedAt } from "./grouping";
+import { claimedHours, deriveStatus, submittedAt } from "./grouping";
 import type { ResolvedActor } from "./grouping";
 
 export const COMMENT_PREFIX = "[sidekick:v1] ";
@@ -138,7 +138,7 @@ export function buildTimeline(
       type: "ship",
       shipId,
       actorId: actor.authorId,
-      hoursSubmitted: averageHours(group),
+      hoursSubmitted: claimedHours(group),
       timestamp: shippedAt,
     },
   ];
@@ -159,7 +159,7 @@ export function buildTimeline(
       type: "approval",
       shipId,
       actorId: FALLBACK_REVIEWER_ID,
-      hoursAssigned: fieldNumber(group.primary, F.overrideHours) ?? averageHours(group),
+      hoursAssigned: fieldNumber(group.primary, F.overrideHours) ?? claimedHours(group),
       feedbackMessage: NO_FEEDBACK,
       justification:
         fieldString(group.primary, F.overrideJustification) || "(approved directly in Airtable)",

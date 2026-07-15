@@ -12,67 +12,27 @@ import {
   type SubmissionRecord,
 } from "./types";
 
-/**
- * Normalize a Code URL into a merge key. Records with the same key are one project.
- * Returns null for empty values (each such record is its own project).
- */
-export function normalizeCodeUrl(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  const withScheme = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
-  let url: URL;
-  try {
-    url = new URL(withScheme);
-  } catch {
-    return trimmed.toLowerCase();
-  }
-  const host = url.hostname.toLowerCase().replace(/^www\./, "");
-  let path = url.pathname.toLowerCase();
-  path = path.replace(/\/+$/, "").replace(/\.git$/, "");
-  return host + path;
-}
-
 export function submittedAt(record: SubmissionRecord): string {
   return fieldString(record, F.firstSubmittedAt) || record.createdTime;
 }
 
-/** Group records by normalized Code URL. Primary = earliest submission. */
+/** One project per submission record. Records are never merged. */
 export function buildGroups(records: SubmissionRecord[]): ProjectGroup[] {
-  const byKey = new Map<string, SubmissionRecord[]>();
-  for (const record of records) {
-    const key = normalizeCodeUrl(fieldString(record, F.codeUrl)) ?? `__solo__:${record.id}`;
-    const bucket = byKey.get(key);
-    if (bucket) bucket.push(record);
-    else byKey.set(key, [record]);
-  }
-  const groups: ProjectGroup[] = [];
-  for (const [key, members] of byKey) {
-    members.sort((a, b) => {
-      const timeOrder = submittedAt(a).localeCompare(submittedAt(b));
-      return timeOrder !== 0 ? timeOrder : a.id.localeCompare(b.id);
-    });
-    groups.push({ key, primary: members[0]!, members });
-  }
-  return groups;
+  return records.map((record) => ({ key: record.id, primary: record, members: [record] }));
 }
 
 /**
- * Group status, OR-ed over members so manual per-record Airtable edits are respected:
- * any submitted-to-unified -> approved, else any rejected -> rejected, else pending.
+ * Ship status: submitted-to-unified -> approved, else rejected -> rejected, else pending.
  */
 export function deriveStatus(group: ProjectGroup): ShipStatus {
-  if (group.members.some((r) => fieldBool(r, F.submitToUnified))) return "approved";
-  if (group.members.some((r) => fieldBool(r, F.rejected))) return "rejected";
+  if (fieldBool(group.primary, F.submitToUnified)) return "approved";
+  if (fieldBool(group.primary, F.rejected)) return "rejected";
   return "pending";
 }
 
-/** Mean of Original Hours over members that have one, rounded to 2 dp. 0 if none do. */
-export function averageHours(group: ProjectGroup): number {
-  const hours = group.members
-    .map((r) => fieldNumber(r, F.originalHours))
-    .filter((h): h is number => h !== null);
-  if (hours.length === 0) return 0;
-  return Math.round((hours.reduce((sum, h) => sum + h, 0) / hours.length) * 100) / 100;
+/** The record's Original Hours, or 0 if it has none. */
+export function claimedHours(group: ProjectGroup): number {
+  return fieldNumber(group.primary, F.originalHours) ?? 0;
 }
 
 export interface ResolvedActor {
@@ -82,7 +42,7 @@ export interface ResolvedActor {
 
 export function groupToProject(group: ProjectGroup, actor: ResolvedActor): Project {
   const { primary, members } = group;
-  const hours = averageHours(group);
+  const hours = claimedHours(group);
 
   const codeUrl = fieldString(primary, F.codeUrl).trim();
   let title = fieldString(primary, F.projectName).trim();
@@ -90,14 +50,7 @@ export function groupToProject(group: ProjectGroup, actor: ResolvedActor): Proje
   if (!title) title = `Untitled project (${primary.id})`;
 
   let description = fieldString(primary, F.description).trim();
-  let epilogue = `Author originally logged ${hours} hours.`;
-  if (members.length > 1) {
-    const perMember = members
-      .map((r) => fieldNumber(r, F.originalHours))
-      .map((h) => (h === null ? "?" : String(h)))
-      .join(", ");
-    epilogue += ` (average of ${members.length} merged submissions: ${perMember})`;
-  }
+  const epilogue = `Author originally logged ${hours} hours.`;
   description = description ? `${description}\n\n---\n${epilogue}` : epilogue;
 
   const hackatimeProjectKeys = [

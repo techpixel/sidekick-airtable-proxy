@@ -8,21 +8,21 @@ The proxy adds **zero fields** to the base. Everything is derived from or writte
 
 | Sidekick concept | Airtable |
 | --- | --- |
-| Project / ship (always 1:1) | One record in `YSWS Project Submission` (merged groups: see below) |
+| Project / ship (always 1:1) | One record in `YSWS Project Submission` (one record = one project; never merged) |
 | Ship status | `Automation - Submit to Unified YSWS` ✓ → `approved`; else `Rejected` ✓ → `rejected`; else `pending` |
-| Claimed hours (`hoursSubmitted`) | `Original Hours` (averaged across merged records) |
+| Claimed hours (`hoursSubmitted`) | `Original Hours` |
 | Assigned hours on approve | `Optional - Override Hours Spent` |
 | Reviewer justification | `Optional - Override Hours Spent Justification` |
 | Approve | Ticks `Automation - Submit to Unified YSWS` (fires the Unified YSWS automation), clears `Rejected` |
 | Reject | Ticks `Rejected` |
-| Review events (approvals, rejections, comments) | Record comments on the primary record, `[sidekick:v1] {json}` |
+| Review events (approvals, rejections, comments) | Record comments on the record, `[sidekick:v1] {json}` |
 | Author identity | `Email` → `Users` table (`Slack ID` / `Hack Club ID`) → Slack API fallback |
 | Hackatime id | Hackatime `lookup_slack_uid` / `lookup_email` (needs `STATS_API_KEY`) |
-| `hackatimeProjectKeys` | `Hackatime Project Name` (union across merged records) |
+| `hackatimeProjectKeys` | `Hackatime Project Name` |
 
-### Merged records
+### One record per project
 
-Records sharing the same normalized Code URL (scheme/`www.`/case/trailing-`/`/`.git`/query ignored) are presented as **one project**. The earliest record is the *primary*: its title, description, author, and screenshot are used, its record id is the project & ship id, and its comments hold the event log. Hours are the average of the group's `Original Hours`. Approve/reject writes apply to **every** record in the group (each row flows to Unified YSWS independently). All member record ids are listed in `project.metadata.recordIds`.
+Every submission record is presented as its own project, even when records share a Code URL — records are never merged (they carry distinct Hackatime projects, hours, and authors). The record id is the project & ship id, and its comments hold the event log.
 
 ### Manual edits in Airtable
 
@@ -35,7 +35,6 @@ Status is re-derived from the checkboxes on every read, so ticking `Automation -
 - **Re-approving an approved ship is a 400** — the Unified YSWS automation already fired and can't be re-run safely. Rejecting an approved ship is also a 400. Approving a rejected ship is allowed (clears `Rejected`).
 - **No shop.** `FETCH_SHOP_ITEMS`/`FETCH_ORDERS` return empty; order/item lookups 404. User notes return `INVALID_ACTION` (Sidekick hides the UI).
 - **Unresolvable authors** get a placeholder `ident!unresolved_<recordId>` id; Sidekick renders them as unknown users.
-- **Merged co-authors are invisible** (the protocol allows one `authorId`); see `metadata.recordIds` and the description epilogue for the full picture.
 - **Screenshot URLs expire** (~2 h, an Airtable attachment property). The 60 s record cache keeps served URLs fresh, but don't persist them.
 
 ## Running

@@ -16,6 +16,6 @@ When constructing the description for projects, include `Description` **AND** `O
 
 A rejection should mark `Rejected` as `true`.
 
-If multiple projects share the same code URL or repo URL, merge them by taking one of the authors (this is arbitrary). The hours should be the average of all of the detected records.
+Each submission record is its own project, even when records share the same code URL or repo URL — do not merge them, since they carry distinct Hackatime projects, hours, and authors.
 
 You can inspect the Airtable base at https://airtable.com/app9SfJm8LOTJKm0A/tbllB2MlHnfep54wK/viwuFxeW81Tf2PzBk?blocks=hide.
