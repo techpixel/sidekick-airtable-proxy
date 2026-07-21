@@ -73,7 +73,8 @@ export async function patchRecords(
   for (let i = 0; i < updates.length; i += 10) {
     await request(`/${env.airtableBaseId}/${env.airtableTableId}`, {
       method: "PATCH",
-      body: JSON.stringify({ records: updates.slice(i, i + 10) }),
+      // typecast lets Airtable create Status single-select options on first use.
+      body: JSON.stringify({ records: updates.slice(i, i + 10), typecast: true }),
     });
   }
 }

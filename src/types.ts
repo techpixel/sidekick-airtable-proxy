@@ -163,6 +163,7 @@ export const F = {
   email: "Email",
   screenshot: "Screenshot",
   description: "Description",
+  githubUsername: "GitHub Username",
   projectName: "Project Name",
   originalHours: "Original Hours",
   hackatimeProjectName: "Hackatime Project Name",

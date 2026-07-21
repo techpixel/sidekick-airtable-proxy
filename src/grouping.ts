@@ -51,7 +51,12 @@ export function groupToProject(group: ProjectGroup, actor: ResolvedActor): Proje
   if (!title) title = `Untitled project (${primary.id})`;
 
   let description = fieldString(primary, F.description).trim();
-  const epilogue = `Author originally logged ${hours} hours.`;
+  const githubUsername = fieldString(primary, F.githubUsername).trim();
+  const epilogueLines = [
+    ...(githubUsername ? [`GitHub: ${githubUsername}`] : []),
+    `Author originally logged ${hours} hours.`,
+  ];
+  const epilogue = epilogueLines.join("\n");
   description = description ? `${description}\n\n---\n${epilogue}` : epilogue;
 
   const hackatimeProjectKeys = [
