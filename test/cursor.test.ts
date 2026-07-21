@@ -22,8 +22,19 @@ function makeSorted(count: number) {
 
 describe("cursor pagination", () => {
   test("round-trips through encode/decode", () => {
-    const anchor: [string, string] = ["2026-07-01T00:00:00.000Z", "rec123"];
+    const anchor: [string, string] = ["repo-3", "rec123"];
     expect(decodeCursor(encodeCursor("pending", anchor), "pending")).toEqual(anchor);
+  });
+
+  test("sorts alphabetically by title, case-insensitively", () => {
+    const sorted = sortGroups(
+      buildGroups([
+        makeRecord({ "Project Name": "zebra" }),
+        makeRecord({ "Project Name": "Apple" }),
+        makeRecord({ "Code URL": "https://github.com/user/mango" }),
+      ]),
+    );
+    expect(sorted.map((e) => e.sortKey[0])).toEqual(["apple", "mango", "zebra"]);
   });
 
   test("rejects a cursor issued for a different status filter", () => {
@@ -54,16 +65,11 @@ describe("cursor pagination", () => {
     const firstPage = pageAfter(sorted, null, 3);
     const anchor = firstPage.page[2]!.sortKey;
 
-    // A new record submitted before the anchor must not shift later pages.
+    // A new record whose title sorts before the anchor must not shift later pages.
     const insert = sortGroups(
-      buildGroups([
-        makeRecord(
-          { "Code URL": "https://github.com/new/early" },
-          { createdTime: "2026-07-01T00:30:00.000Z" },
-        ),
-      ]),
+      buildGroups([makeRecord({ "Code URL": "https://github.com/new/early" })]),
     )[0]!;
-    const grown = [...sorted.slice(0, 1), insert, ...sorted.slice(1)];
+    const grown = [insert, ...sorted];
 
     const secondPage = pageAfter(grown, anchor, 3);
     const originalSecondPage = pageAfter(sorted, anchor, 3);

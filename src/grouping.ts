@@ -36,6 +36,13 @@ export function claimedHours(group: ProjectGroup): number {
   return fieldNumber(group.primary, F.originalHours) ?? 0;
 }
 
+export function projectTitle(record: SubmissionRecord): string {
+  const codeUrl = fieldString(record, F.codeUrl).trim();
+  let title = fieldString(record, F.projectName).trim();
+  if (!title && codeUrl) title = codeUrl.replace(/\/+$/, "").split("/").pop() ?? "";
+  return title || `Untitled project (${record.id})`;
+}
+
 export interface ResolvedActor {
   authorId: string;
   hackatimeId?: string;
@@ -46,9 +53,7 @@ export function groupToProject(group: ProjectGroup, actor: ResolvedActor): Proje
   const hours = claimedHours(group);
 
   const codeUrl = fieldString(primary, F.codeUrl).trim();
-  let title = fieldString(primary, F.projectName).trim();
-  if (!title && codeUrl) title = codeUrl.replace(/\/+$/, "").split("/").pop() ?? "";
-  if (!title) title = `Untitled project (${primary.id})`;
+  const title = projectTitle(primary);
 
   let description = fieldString(primary, F.description).trim();
   const githubUsername = fieldString(primary, F.githubUsername).trim();
@@ -105,29 +110,33 @@ export function findGroupByRecordId(
 
 export interface SortedGroup {
   group: ProjectGroup;
-  sortKey: [string, string]; // [submittedAt ISO, primary record id]
+  sortKey: [string, string]; // [lowercased title, primary record id]
 }
 
+/**
+ * Alphabetical by title, tiebroken by record id. Must order keys exactly like
+ * pageAfter's comparison (plain codepoint order), or pagination skips items.
+ */
 export function sortGroups(groups: ProjectGroup[]): SortedGroup[] {
   return groups
     .map((group) => ({
       group,
-      sortKey: [submittedAt(group.primary), group.primary.id] as [string, string],
+      sortKey: [projectTitle(group.primary).toLowerCase(), group.primary.id] as [string, string],
     }))
     .sort((a, b) => {
-      const timeOrder = a.sortKey[0].localeCompare(b.sortKey[0]);
-      return timeOrder !== 0 ? timeOrder : a.sortKey[1].localeCompare(b.sortKey[1]);
+      if (a.sortKey[0] !== b.sortKey[0]) return a.sortKey[0] < b.sortKey[0] ? -1 : 1;
+      return a.sortKey[1] < b.sortKey[1] ? -1 : a.sortKey[1] > b.sortKey[1] ? 1 : 0;
     });
 }
 
 interface CursorPayload {
-  v: 1;
+  v: 2;
   s: string; // status filter the cursor was issued for
   a: [string, string]; // sort key of the last item on the previous page
 }
 
 export function encodeCursor(statusFilter: string, anchor: [string, string]): string {
-  const payload: CursorPayload = { v: 1, s: statusFilter, a: anchor };
+  const payload: CursorPayload = { v: 2, s: statusFilter, a: anchor };
   return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
 
@@ -135,7 +144,7 @@ export function decodeCursor(cursor: string, statusFilter: string): [string, str
   let payload: CursorPayload;
   try {
     payload = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
-    if (payload.v !== 1 || !Array.isArray(payload.a) || payload.a.length !== 2) throw new Error();
+    if (payload.v !== 2 || !Array.isArray(payload.a) || payload.a.length !== 2) throw new Error();
   } catch {
     throw badRequest("Invalid pagination cursor.");
   }

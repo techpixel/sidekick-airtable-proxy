@@ -30,6 +30,7 @@ Status is re-derived from the `Status` single-select on every read, so setting i
 
 ## Protocol deviations (by design)
 
+- **Alphabetical queues.** `FETCH_PROJECTS` pages are sorted by project title (case-insensitive, record id tiebreak) and set `explicitlySorted: true`, so Sidekick keeps that order instead of its default oldest-ship-first sort.
 - **No public feedback.** `feedbackMessage` is never persisted; events echo the constant `"(none)"`. Only the internal justification is kept. `UPDATE_REVIEW_ACTION.feedbackMessage` is accepted and discarded.
 - **Single-stage review.** `pending_hq` never occurs; `authorize`/`deauthorize` and `hoursAssigned` edits via `UPDATE_REVIEW_ACTION` return 400. `supportsRewardedOverride` is not advertised and `rewardedHoursOverride` is rejected.
 - **Re-approving an approved ship is a 400.** Rejecting an approved ship is also a 400. Approving a rejected ship is allowed (flips `Status` to `Approved`).

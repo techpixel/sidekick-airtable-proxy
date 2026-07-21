@@ -63,6 +63,8 @@ export async function fetchProjects(input: Record<string, unknown>): Promise<unk
     projects,
     ...(hasMore && last ? { nextCursor: encodeCursor(status, last.sortKey) } : {}),
     totalCount: sorted.length,
+    // Pages are alphabetical by title; Sidekick must not re-sort by ship date.
+    explicitlySorted: true,
   };
 }
 
